@@ -21,6 +21,7 @@ import type {
   RiskLevel,
   ExecutionOptions,
   ExoHooks,
+  ExoMiddleware,
 } from "../types/index.js";
 import {
   ValidationError,
@@ -28,6 +29,16 @@ import {
   RiskViolationError,
   ConfirmationRequiredError,
 } from "../errors/index.js";
+
+// ============================================================================
+// Internal Types
+// ============================================================================
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type PipelineFn = (
+  args?: unknown,
+  context?: ExoContext,
+) => Promise<ExoExecutionResult<any>>;
 
 // ============================================================================
 // Default Configuration
@@ -43,6 +54,7 @@ const DEFAULT_CONFIG = {
   retryable: true,
   maxRetries: 3,
   tags: [] as string[],
+  middleware: [] as ExoMiddleware[],
 };
 
 // ============================================================================
@@ -114,6 +126,7 @@ export class ExoTool<TSchema extends ZodTypeAny, TOutput = unknown> {
    */
   public readonly config: Required<Omit<ExoToolConfig, "hooks">> & {
     hooks?: ExoHooks;
+    middleware: ExoMiddleware[];
   };
 
   /**
@@ -451,6 +464,39 @@ export class ExoTool<TSchema extends ZodTypeAny, TOutput = unknown> {
     args: unknown,
     context: ExoContext = {},
     options: ExecutionOptions = {},
+  ): Promise<ExoExecutionResult<TOutput>> {
+    const middleware = this.config.middleware || [];
+
+    const startFn: PipelineFn = async (
+      coreArgs?: unknown,
+      coreContext?: ExoContext,
+    ) => this._executeCore(coreArgs ?? args, coreContext ?? context, options);
+
+    // Create the pipeline execution chain
+    const pipeline = middleware.reduceRight<PipelineFn>((next, mw) => {
+      return async (pipelineArgs?: unknown, pipelineContext?: ExoContext) => {
+        return mw({
+          toolName: this.name,
+          args: pipelineArgs ?? args,
+          context: pipelineContext ?? context,
+          next: async () => next(pipelineArgs, pipelineContext),
+        });
+      };
+    }, startFn);
+
+    // Start the pipeline
+    // Cast to TOutput as middleware system uses unknown/any
+    return (await pipeline(args, context)) as ExoExecutionResult<TOutput>;
+  }
+
+  /**
+   * The core execution logic (validation, risk check, execution).
+   * This is what gets called at the end of the middleware pipeline.
+   */
+  private async _executeCore(
+    args: unknown,
+    context: ExoContext,
+    options: ExecutionOptions,
   ): Promise<ExoExecutionResult<TOutput>> {
     const startTime = performance.now();
 

@@ -1,6 +1,6 @@
 {
   "name": "@fozooni/exo",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "description": "A strict, type-safe Exoskeleton for AI Agents. Wraps functions into Tools with runtime validation, risk management, and automatic schema generation for OpenAI and Anthropic.",
   "main": "./dist/index.js",

@@ -157,8 +157,8 @@ const strictSpec = weatherTool.getOpenAISpec({ strict: true });
 
 ## Roadmap
 
-- [ ] Middleware pipeline for pre/post processing
-- [ ] Built-in rate limiting
+- [x] Middleware pipeline for pre/post processing
+- [x] Built-in rate limiting
 - [ ] Telemetry integrations (OpenTelemetry, Datadog)
 - [ ] Tool versioning and deprecation support
 

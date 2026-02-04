@@ -60,6 +60,8 @@ export {
   type HookStartPayload,
   type HookSuccessPayload,
   type HookErrorPayload,
+  type ExoMiddleware,
+  type MiddlewareParams,
 } from "./types/index.js";
 
 // Errors
@@ -80,6 +82,12 @@ export {
   type VercelToolSpec,
   type LangChainToolSpec,
 } from "./adapters/index.js";
+
+// Middleware
+export {
+  createRateLimiter,
+  type RateLimiterOptions,
+} from "./middleware/index.js";
 
 // ============================================================================
 // Factory Function

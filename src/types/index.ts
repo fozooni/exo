@@ -305,7 +305,68 @@ export interface ExoToolConfig {
    * These fire on every execution regardless of how the tool is invoked.
    */
   hooks?: ExoHooks;
+
+  /**
+   * Middleware functions to wrap the execution pipeline.
+   * Middleware runs before/after the tool's core logic and can be used for
+   * logging, rate limiting, transformation, etc.
+   *
+   * @example
+   * ```typescript
+   * const loggingMiddleware: ExoMiddleware = async (params) => {
+   *   console.log('Before');
+   *   const result = await params.next();
+   *   console.log('After');
+   *   return result;
+   * };
+   * ```
+   */
+  middleware?: ExoMiddleware[];
 }
+
+// ============================================================================
+// Middleware System
+// ============================================================================
+
+/**
+ * Parameters for middleware functions.
+ */
+export interface MiddlewareParams {
+  /**
+   * The name of the tool being executed.
+   */
+  toolName: string;
+
+  /**
+   * The raw arguments passed to the tool.
+   * Middleware can modify these arguments before changing execution,
+   * but should be careful not to break schema validation.
+   */
+  args: unknown;
+
+  /**
+   * The execution context.
+   */
+  context: ExoContext;
+
+  /**
+   * The next function in the pipeline.
+   * Calling this executes the next middleware or the core tool logic.
+   *
+   * @returns A promise resolving to the execution result.
+   */
+  next: () => Promise<ExoExecutionResult<unknown>>;
+}
+
+/**
+ * Middleware function type.
+ *
+ * Middleware wraps the execution of a tool and can intercept args, context,
+ * and results, or block execution entirely.
+ */
+export type ExoMiddleware = (
+  params: MiddlewareParams,
+) => Promise<ExoExecutionResult<unknown>>;
 
 // ============================================================================
 // Execution Result
